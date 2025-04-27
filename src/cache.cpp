@@ -81,15 +81,17 @@ bool Cache::access(addr_t address, Operation op, cycle_t current_cycle) {
                 return true; // HIT (silently transition E->M)
             } else { // current_state == MESIState::SHARED
                 // Write Hit requires upgrade S -> M
-                stats->recordMiss(id); // Count coherence upgrade as a miss for stats/stall purpose
-                stalled = true;        // Core must stall waiting for upgrade
-                handleMiss(address, index, tag, op, current_cycle); // Handle S->M case via miss logic
-                return false; // MISS (Coherence Miss)
+                std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": Write HIT to S state Addr=" << std::hex << address << std::dec << ". Calling handleMiss for upgrade." << std::endl; // ADDED
+                stats->recordMiss(id);
+                stalled = true;
+                handleMiss(address, index, tag, op, current_cycle);
+                return false;
             }
         }
     } else { // Definite MISS - Line not present (State I)
+        std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": " << (op==Operation::WRITE?"Write":"Read") << " MISS (State I) Addr=" << std::hex << address << std::dec << ". Calling handleMiss." << std::endl; // ADDED
         stats->recordMiss(id);
-        stalled = true; // Core must stall
+        stalled = true;
         handleMiss(address, index, tag, op, current_cycle);
         return false; // MISS
     }
@@ -97,25 +99,27 @@ bool Cache::access(addr_t address, Operation op, cycle_t current_cycle) {
 
 
 // --- Internal Miss Handling Logic ---
+// --- Internal Miss Handling Logic (Corrected) ---
 void Cache::handleMiss(addr_t address, unsigned int index, addr_t tag, Operation op, cycle_t current_cycle) {
     addr_t block_addr = getBlockAddress(address);
 
-     // Check if already handling a miss for this block (e.g., core retries while stalled)
-     if (pending_requests.count(block_addr)) {
-        // Already waiting for this block, core remains stalled. Do nothing.
-        return;
-     }
+    // Check if already handling a miss for this block
+    if (pending_requests.count(block_addr)) {
+        return; // Already waiting
+    }
 
-    // --- Coherence Miss Case: Write to Shared block ---
+    // --- Handle Write Hit to Shared State (S->M Upgrade) ---
     int existing_way = sets[index].findLine(tag);
     if (op == Operation::WRITE && existing_way != -1 && sets[index].getLine(existing_way).state == MESIState::SHARED) {
-        // Need to issue BusUpgr
+        // This is a Coherence Miss requiring BusUpgr
+
         PendingRequest pending;
         pending.original_op = op;
         pending.target_way = existing_way; // Target the existing line
         pending.request_init_cycle = current_cycle;
         pending_requests[block_addr] = pending;
-
+        std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": handleMiss issuing BusUpgr for Addr=" << std::hex << block_addr << std::dec << std::endl;
+        // Issue BusUpgr
         BusRequest bus_req;
         bus_req.requestingCoreId = id;
         bus_req.type = BusTransaction::BusUpgr;
@@ -124,41 +128,40 @@ void Cache::handleMiss(addr_t address, unsigned int index, addr_t tag, Operation
         bus->addRequest(bus_req);
 
         // Core is stalled, waiting for BusUpgr completion signal
-        return;
+        return; // Exit after handling S->M upgrade
     }
 
-    // --- Standard Miss Case (Read Miss to I, Write Miss to I) ---
+    // --- Handle Read Miss (I->S or I->E) OR Write Miss (I->M) ---
+    // Both require allocating a block and fetching data via BusRd or BusRdX
+
     int target_way = -1; // Way index where the new block will be placed
     allocateBlock(block_addr, index, tag, target_way, current_cycle); // Finds/evicts way, handles WB initiation
 
     if (target_way == -1) {
-         // Should not happen if allocateBlock works correctly
-         std::cerr << "Error: Could not allocate block for miss!" << std::endl;
-         stalled = false; // Unstall core? Or fatal error?
-         return;
+        std::cerr << "Error: Core " << id << " could not allocate block for miss addr " << std::hex << address << std::dec << "!" << std::endl;
+        stalled = false; // Try to recover? Needs careful thought.
+        return;
     }
 
-    // Create pending request entry
+    // Create the *single* pending request entry for this miss
     PendingRequest pending;
     pending.original_op = op;
     pending.target_way = target_way; // Store where the data should go
     pending.request_init_cycle = current_cycle;
-    // Check if allocateBlock initiated a writeback for the victim
-    // We need allocateBlock to signal this. Let's assume it returns victim addr if WB needed.
-    // Refinement: allocateBlock should probably just issue the WB request directly.
-
     pending_requests[block_addr] = pending; // Track the miss
 
-
-    // Issue the appropriate bus request for the data
+    // Issue the *single* appropriate bus request for the data fetch
     BusRequest bus_req;
     bus_req.requestingCoreId = id;
+    // Use BusRdX for Write Miss (I->M), BusRd for Read Miss (I->S/E)
     bus_req.type = (op == Operation::READ) ? BusTransaction::BusRd : BusTransaction::BusRdX;
+    std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": handleMiss issuing " << (bus_req.type == BusTransaction::BusRd ? "BusRd" : "BusRdX") << " for Addr=" << std::hex << block_addr << std::dec << std::endl; // ADDED
     bus_req.address = block_addr;
     bus_req.request_cycle = current_cycle;
     bus->addRequest(bus_req);
 
-    // Core is stalled waiting for BusRd/BusRdX completion
+    // Core is stalled waiting for BusRd/BusRdX completion (stalled = true was set in Cache::access)
+    // No return needed here, function ends.
 }
 
 
