@@ -56,7 +56,7 @@ void Bus::tick(cycle_t current_cycle) {
     if (!busy) {
         if (arbitrate(current_cycle)) { // Sets current_winner and current_transaction
             // Broadcast snoop messages to OTHERS and check for C2C transfer/sharing
-            SnoopResult snoop_result = processSnooping(current_transaction, current_winner);
+            SnoopResult snoop_result = processSnooping(current_transaction, current_winner, current_cycle);
 
             // Start the transaction (sets bus busy state and timer)
             startTransaction(current_transaction, snoop_result, current_cycle);
@@ -101,7 +101,7 @@ bool Bus::arbitrate(cycle_t current_cycle) {
 }
 
 
-SnoopResult Bus::processSnooping(const BusRequest& request, int requestingCoreId) {
+SnoopResult Bus::processSnooping(const BusRequest& request, int requestingCoreId, cycle_t current_cycle) {
     SnoopResult combined_result;
     int sharer_count = 0;
     int invalidation_count = 0; // Track how many caches invalidated
@@ -110,7 +110,7 @@ SnoopResult Bus::processSnooping(const BusRequest& request, int requestingCoreId
     for (int i = 0; i < caches.size(); ++i) {
         if (i == requestingCoreId) continue; // Don't snoop self
 
-        SnoopResult result = caches[i]->snoopRequest(request.type, request.address);
+        SnoopResult result = caches[i]->snoopRequest(request.type, request.address, current_cycle);
 
         if (result.data_supplied) {
              // Only one cache should supply data (the one in M or E state)

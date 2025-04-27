@@ -32,7 +32,7 @@ private:
 
     // Private methods
     bool arbitrate(cycle_t current_cycle); // Returns true if a winner was chosen
-    SnoopResult processSnooping(const BusRequest& request, int requestingCoreId); // Returns combined snoop results
+    SnoopResult processSnooping(const BusRequest& request, int requestingCoreId, cycle_t current_cycle); // Returns combined snoop results
     void startTransaction(const BusRequest& request, const SnoopResult& snoop_result, cycle_t current_cycle);
 
 

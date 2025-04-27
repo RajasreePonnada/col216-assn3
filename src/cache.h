@@ -61,7 +61,7 @@ public:
 
     // Called by the Bus during snooping
     // Returns results of the snoop (e.g., if data was supplied)
-    SnoopResult snoopRequest(BusTransaction transaction, addr_t address);
+    SnoopResult snoopRequest(BusTransaction transaction, addr_t address, cycle_t current_cycle);
 
     // Called by the Bus when a requested transaction completes
     // The request that completed is passed in.

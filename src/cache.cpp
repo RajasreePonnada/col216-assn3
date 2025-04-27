@@ -210,7 +210,7 @@ void Cache::initiateWriteback(addr_t victim_address, unsigned int victim_set_ind
 
 
 // --- Snooping Logic ---
-SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address) {
+SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address, cycle_t current_cycle) {
     SnoopResult result;
     addr_t block_addr = getBlockAddress(address);
     unsigned int index = getIndex(block_addr);
@@ -226,6 +226,9 @@ SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address) {
             case BusTransaction::BusRd: // Other core reading
                 if (current_state == MESIState::MODIFIED) {
                     // Provide data, transition M -> S
+
+                    addr_t my_block_addr = reconstructAddress(line.tag, index);
+                    initiateWriteback(my_block_addr, index, way_index, current_cycle); // Initiate WB for M block
                     line.state = MESIState::SHARED;
                     result.data_supplied = true;
                     result.was_dirty = true; // Indicate data came from M state
@@ -245,15 +248,18 @@ SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address) {
                     result.data_supplied = true; // Provide data (last copy)
                     result.was_dirty = true;
                     line.state = MESIState::INVALID; // Invalidate self
+                    std::cout << "Core " << id << ": Invalidating line on BusRdX-M" << std::endl;
                     stats->recordInvalidation();
                 } else if (current_state == MESIState::EXCLUSIVE) {
                     result.data_supplied = true; // Provide data
                     line.state = MESIState::INVALID;
+                    std::cout << "Core " << id << ": Invalidating line on BusRdX-E" << std::endl;
                     stats->recordInvalidation();
                 } else if (current_state == MESIState::SHARED) {
                     // Don't supply data
                     line.state = MESIState::INVALID;
                     stats->recordInvalidation();
+                    std::cout << "Core " << id << ": Invalidating line on BusRdX-S" << std::endl;
                 }
                 // If Invalid: Remain I
                 break;
@@ -262,6 +268,7 @@ SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address) {
                  if (current_state == MESIState::SHARED) {
                      line.state = MESIState::INVALID;
                      stats->recordInvalidation();
+                     std::cout << "Core " << id << ": Invalidating line on BusUpgr" << std::endl;
                  }
                  // Ignore if M, E, I. (Shouldn't receive BusUpgr if M/E)
                  break;
