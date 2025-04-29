@@ -35,6 +35,7 @@ private:
     SnoopResult processSnooping(const BusRequest& request, int requestingCoreId, cycle_t current_cycle); // Returns combined snoop results
     void startTransaction(const BusRequest& request, const SnoopResult& snoop_result, cycle_t current_cycle);
 
+    
 
 public:
     Bus(unsigned int block_size, Stats* statistics);

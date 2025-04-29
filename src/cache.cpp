@@ -81,7 +81,7 @@ bool Cache::access(addr_t address, Operation op, cycle_t current_cycle) {
                 return true; // HIT (silently transition E->M)
             } else { // current_state == MESIState::SHARED
                 // Write Hit requires upgrade S -> M
-                std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": Write HIT to S state Addr=" << std::hex << address << std::dec << ". Calling handleMiss for upgrade." << std::endl; // ADDED
+                // std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": Write HIT to S state Addr=" << std::hex << address << std::dec << ". Calling handleMiss for upgrade." << std::endl; // ADDED
                 stats->recordMiss(id);
                 stalled = true;
                 handleMiss(address, index, tag, op, current_cycle);
@@ -89,7 +89,7 @@ bool Cache::access(addr_t address, Operation op, cycle_t current_cycle) {
             }
         }
     } else { // Definite MISS - Line not present (State I)
-        std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": " << (op==Operation::WRITE?"Write":"Read") << " MISS (State I) Addr=" << std::hex << address << std::dec << ". Calling handleMiss." << std::endl; // ADDED
+        // std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": " << (op==Operation::WRITE?"Write":"Read") << " MISS (State I) Addr=" << std::hex << address << std::dec << ". Calling handleMiss." << std::endl; // ADDED
         stats->recordMiss(id);
         stalled = true;
         handleMiss(address, index, tag, op, current_cycle);
@@ -118,7 +118,7 @@ void Cache::handleMiss(addr_t address, unsigned int index, addr_t tag, Operation
         pending.target_way = existing_way; // Target the existing line
         pending.request_init_cycle = current_cycle;
         pending_requests[block_addr] = pending;
-        std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": handleMiss issuing BusUpgr for Addr=" << std::hex << block_addr << std::dec << std::endl;
+        // std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": handleMiss issuing BusUpgr for Addr=" << std::hex << block_addr << std::dec << std::endl;
         // Issue BusUpgr
         BusRequest bus_req;
         bus_req.requestingCoreId = id;
@@ -155,7 +155,7 @@ void Cache::handleMiss(addr_t address, unsigned int index, addr_t tag, Operation
     bus_req.requestingCoreId = id;
     // Use BusRdX for Write Miss (I->M), BusRd for Read Miss (I->S/E)
     bus_req.type = (op == Operation::READ) ? BusTransaction::BusRd : BusTransaction::BusRdX;
-    std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": handleMiss issuing " << (bus_req.type == BusTransaction::BusRd ? "BusRd" : "BusRdX") << " for Addr=" << std::hex << block_addr << std::dec << std::endl; // ADDED
+    // std::cout << "DEBUG Core " << id << " Cycle " << current_cycle << ": handleMiss issuing " << (bus_req.type == BusTransaction::BusRd ? "BusRd" : "BusRdX") << " for Addr=" << std::hex << block_addr << std::dec << std::endl; // ADDED
     bus_req.address = block_addr;
     bus_req.request_cycle = current_cycle;
     bus->addRequest(bus_req);
@@ -185,7 +185,7 @@ void Cache::allocateBlock(addr_t block_addr, unsigned int index, addr_t tag, int
             }
         }
     }
-
+z
     // Mark the chosen way as invalid temporarily until data arrives
     // Set tag now so reconstructAddress works if needed for WB, but state is key.
     CacheLine& target_line = sets[index].getLine(way_index);
@@ -251,18 +251,18 @@ SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address, cycl
                     result.data_supplied = true; // Provide data (last copy)
                     result.was_dirty = true;
                     line.state = MESIState::INVALID; // Invalidate self
-                    std::cout << "Core " << id << ": Invalidating line on BusRdX-M" << std::endl;
+                    // std::cout << "Core " << id << ": Invalidating line on BusRdX-M" << std::endl;
                     stats->recordInvalidation();
                 } else if (current_state == MESIState::EXCLUSIVE) {
                     result.data_supplied = true; // Provide data
                     line.state = MESIState::INVALID;
-                    std::cout << "Core " << id << ": Invalidating line on BusRdX-E" << std::endl;
+                    // std::cout << "Core " << id << ": Invalidating line on BusRdX-E" << std::endl;
                     stats->recordInvalidation();
                 } else if (current_state == MESIState::SHARED) {
                     // Don't supply data
                     line.state = MESIState::INVALID;
                     stats->recordInvalidation();
-                    std::cout << "Core " << id << ": Invalidating line on BusRdX-S" << std::endl;
+                    // std::cout << "Core " << id << ": Invalidating line on BusRdX-S" << std::endl;
                 }
                 // If Invalid: Remain I
                 break;
@@ -271,7 +271,7 @@ SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address, cycl
                  if (current_state == MESIState::SHARED) {
                      line.state = MESIState::INVALID;
                      stats->recordInvalidation();
-                     std::cout << "Core " << id << ": Invalidating line on BusUpgr" << std::endl;
+                    //    << "Core " << id << ": Invalidating line on BusUpgr" << std::endl;
                  }
                  // Ignore if M, E, I. (Shouldn't receive BusUpgr if M/E)
                  break;

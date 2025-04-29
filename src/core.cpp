@@ -34,7 +34,7 @@ Core::~Core() {
 bool Core::isFinished() const {
     // Finished if trace is done AND the core is not stalled processing the last instruction
     // trace_finished flag is now the primary indicator of EOF
-    return trace_finished && !core_stalled_on_cache;
+    return trace_finished && !core_stalled_on_cache && !needs_completion_cycle;
 }
 
 
@@ -87,13 +87,27 @@ bool Core::readAndParseNextAccess() {
 void Core::tick(cycle_t global_cycle) {
     internal_cycle = global_cycle; // Update internal view of time
 
+    // *** ADDED: Check if we need to spend the completion cycle ***
+    if (needs_completion_cycle) {
+        needs_completion_cycle = false; // Consume the cycle
+        core_stalled_on_cache = false;  // Officially unstalled now
+        processing_access = false;      // Mark the previous access as complete
+        // Do *not* increment stall cycles here, this is the completion cycle
+        return; // End tick here, next instruction fetched next cycle
+    }
+
+
     // 1. Check if we were stalled and if the cache is now ready
     if (core_stalled_on_cache) {
         if (!cache->isStalled()) {
-            // Cache finished the request that caused the stall.
-            core_stalled_on_cache = false;
-            processing_access = false; // The pending access is now complete.
+            // Cache finished the request! Don't unstall core immediately.
+            // Set the flag to consume the next cycle for completion.
+            needs_completion_cycle = true;
+            // core_stalled_on_cache = false;
+            // processing_access = false; // The pending access is now complete.
             // Ready to fetch next instruction in the *next* cycle.
+            stats->incrementStallCycles(id); // This is the last stall cycle
+            return; // End tick here, completion happens next cycle
         } else {
             // Still stalled, record stall cycle for stats
             stats->incrementStallCycles(id);

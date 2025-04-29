@@ -27,9 +27,12 @@ private:
 
     // Stall tracking
     bool core_stalled_on_cache = false; // Is the core itself stalled?
-
+     // *** ADDED: Flag for post-miss completion cycle ***
+     bool needs_completion_cycle = false;
+     
     MemAccess current_access; // The access being processed or that caused stall
     bool processing_access = false; // Are we currently trying to execute an access?
+    
 
     // --- Optimization: Helper to get next access ---
     bool readAndParseNextAccess();
