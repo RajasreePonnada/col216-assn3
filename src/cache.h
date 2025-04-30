@@ -11,6 +11,7 @@
 #include "stats.h"
 
 class Bus;
+class Stats;
 class Cache {
 private:
     int id; // Core ID

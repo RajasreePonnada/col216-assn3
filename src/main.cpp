@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
         // Example for getting max cycles for report
         cycle_t max_exec_time = sim.getMaxCycles();
-        std::cout << "Maximum Execution Time (Final Cycle): " << max_exec_time << " cycles" << std::endl;
+        // std::cout << "Maximum Execution Time (Final Cycle): " << max_exec_time << " cycles" << std::endl;
     }
     catch (const std::exception &e)
     {

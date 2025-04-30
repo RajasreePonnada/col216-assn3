@@ -255,20 +255,20 @@ SnoopResult Cache::snoopRequest(BusTransaction transaction, addr_t address, cycl
                     result.was_dirty = true;
                     line.state = MESIState::INVALID;
                     stats->recordInvalidation();
-                    std::cout << "Core " << id << ": Invalidating line on BusRdX-M" << std::endl;
+                    //std::cout << "Core " << id << ": Invalidating line on BusRdX-M" << std::endl;
                 } else if (current_state == MESIState::EXCLUSIVE) {
                     // *** CHANGE HERE based on Slide 22 ***
                     // E state: Invalidate (E->I), DO NOT supply data. Data comes from memory.
                     result.data_supplied = false; // <--- MODIFIED: Force memory read
                     line.state = MESIState::INVALID;
                     stats->recordInvalidation();
-                    std::cout << "Core " << id << ": Invalidating line on BusRdX-E (Forcing Mem Read)" << std::endl; // Log updated slightly
+                    //std::cout << "Core " << id << ": Invalidating line on BusRdX-E (Forcing Mem Read)" << std::endl; // Log updated slightly
                 } else if (current_state == MESIState::SHARED) {
                     // S state: Invalidate (S->I), Do not supply data.
                     result.data_supplied = false; // Data comes from memory
                     line.state = MESIState::INVALID;
                     stats->recordInvalidation();
-                    std::cout << "Core " << id << ": Invalidating line on BusRdX-S" << std::endl;
+                    //std::cout << "Core " << id << ": Invalidating line on BusRdX-S" << std::endl;
                 }
                 // If Invalid: Remain I
                 break;

@@ -1,6 +1,10 @@
 #include "stats.h"
+#include "bus.h"
 #include <numeric> // For std::accumulate
 #include <cmath>   // For std::max if needed, though direct comparison works
+#include <iomanip> // Include for formatting
+
+class Bus;
 
 Stats::Stats() :
     read_instructions(NUM_CORES, 0),
@@ -10,8 +14,32 @@ Stats::Stats() :
     cache_accesses(NUM_CORES, 0),
     cache_evictions(NUM_CORES, 0),
     writebacks(NUM_CORES, 0),
-    stall_cycles(NUM_CORES, 0) // Initialize stall cycles
-    {}
+    stall_cycles(NUM_CORES, 0), // Initialize stall cycles
+    // *** Initialize new vectors ***
+    invalidations_received(NUM_CORES, 0),
+    data_traffic_caused_bytes(NUM_CORES, 0)
+    {} // Other global stats default to 0
+
+    // Renamed method to record invalidations RECEIVED by a specific core's cache
+// void Stats::recordInvalidationReceived(int coreId, int count) {
+//     if (coreId >= 0 && coreId < NUM_CORES) {
+//         invalidations_received[coreId] += count;
+//     }
+//     // Also increment the global count (total invalidations broadcast)
+//     total_invalidations += count;
+// }
+
+// // Modified method to track total traffic AND traffic caused by specific core
+// void Stats::addBusTraffic(uint64_t bytes, int causingCoreId) {
+//     total_bus_traffic_bytes += bytes; // Update global total
+//     if (causingCoreId >= 0 && causingCoreId < NUM_CORES) {
+//         data_traffic_caused_bytes[causingCoreId] += bytes;
+//     } else {
+//          // It seems the error originates *before* this, as the message is "Invalid core ID... in bus request."
+//          // But adding an error log here might confirm if this function receives bad data.
+//          std::cerr << "ERROR (Stats::addBusTraffic): Received invalid causingCoreId: " << causingCoreId << std::endl;
+//     }
+// }
 
 void Stats::recordAccess(int coreId, Operation op) {
     cache_accesses[coreId]++;
@@ -51,59 +79,74 @@ void Stats::incrementStallCycles(int coreId, cycle_t cycles) {
 }
 
 
-void Stats::printFinalStats(unsigned int block_size) {
-    std::cout << "========== Simulation Results ==========" << std::endl;
-    cycle_t max_cycles = 0; // Find max cycles across cores
+// *** REWRITE printFinalStats ***
+void Stats::printFinalStats(
+    const std::string& trace_prefix,
+    unsigned int s,
+    unsigned int E,
+    unsigned int b,
+    const Bus* bus // Receive Bus pointer
+) {
+    // --- Calculate derived parameters ---
+    unsigned long long block_size_bytes = 1ULL << b;
+    unsigned long long num_sets = 1ULL << s;
+    // Calculate size carefully to avoid overflow if s+E+b is large
+    double cache_size_kb = static_cast<double>(num_sets) * E * block_size_bytes / 1024.0;
 
+    // Get total bus transactions from the Bus object
+    if (bus) {
+        overall_bus_transactions = bus->getTotalTransactions();
+    } else {
+        overall_bus_transactions = 0; // Should not happen if passed correctly
+    }
+
+    // --- Print Simulation Parameters ---
+    std::cout << "Simulation Parameters:" << std::endl;
+    std::cout << "  Trace Prefix: " << trace_prefix << std::endl;
+    std::cout << "  Set Index Bits: " << s << std::endl;
+    std::cout << "  Associativity: " << E << std::endl;
+    std::cout << "  Block Bits: " << b << std::endl;
+    std::cout << "  Block Size (Bytes): " << block_size_bytes << std::endl;
+    std::cout << "  Number of Sets: " << num_sets << std::endl;
+    std::cout << "  Cache Size (KB per core): " << std::fixed << std::setprecision(2) << cache_size_kb << std::endl;
+    std::cout << "  MESI Protocol: Enabled" << std::endl; // Assuming always MESI
+    std::cout << "  Write Policy: Write-back, Write-allocate" << std::endl;
+    std::cout << "  Replacement Policy: LRU" << std::endl;
+    std::cout << "  Bus: Central snooping bus" << std::endl;
+    std::cout << std::endl;
+
+    // --- Print Per-Core Statistics ---
+    cycle_t max_cycles = 0; // Find max cycles across cores for summary consistency
     for (int i = 0; i < NUM_CORES; ++i) {
-        double miss_rate = (cache_accesses[i] == 0) ? 0.0 : static_cast<double>(cache_misses[i]) / cache_accesses[i];
-        uint64_t total_instructions = read_instructions[i] + write_instructions[i];
-
-        // Idle cycles = Total cycles core was active - cycles spent on hits (assuming 1 cycle/hit)
-        // More accurate: Total cycles - instructions executed (if 1 instr/cycle when not stalled)
-        // Even better: Use directly tracked stall cycles.
-        // Note: total_cycles[i] is the cycle the core *finished*.
-        // Idle cycles = total_cycles - non_stalled_cycles
-        // Assuming non_stalled_cycles = total_instructions (1 cycle per instruction)
-        cycle_t computed_idle_cycles = (total_cycles[i] >= total_instructions) ? (total_cycles[i] - total_instructions) : 0;
-
-        // Compare with tracked stall cycles (should be similar if assumptions match)
-        cycle_t tracked_idle_cycles = stall_cycles[i];
-
         max_cycles = std::max(max_cycles, total_cycles[i]);
 
+        uint64_t total_instructions = read_instructions[i] + write_instructions[i];
+        double miss_rate_percent = (cache_accesses[i] == 0) ? 0.0 : (static_cast<double>(cache_misses[i]) / cache_accesses[i]) * 100.0;
 
-        std::cout << "--- Core " << i << " ---" << std::endl;
-        std::cout << "  Instructions (R/W):    " << read_instructions[i] << " / " << write_instructions[i] << " (Total: " << total_instructions << ")" << std::endl;
-        std::cout << "  Total Core Cycles:     " << total_cycles[i] << std::endl;
-        // std::cout << "  Idle Cycles (Computed):" << computed_idle_cycles << std::endl; // Keep one version
-        std::cout << "  Idle Cycles (Tracked): " << tracked_idle_cycles << std::endl; // Use tracked stalls
-        std::cout << "  Cache Misses:          " << cache_misses[i] << std::endl;
-        std::cout << "  Cache Accesses:        " << cache_accesses[i] << std::endl;
-        std::cout << "  Cache Miss Rate:       " << std::fixed << std::setprecision(4) << miss_rate << std::endl;
-        std::cout << "  Cache Evictions:       " << cache_evictions[i] << std::endl;
-        std::cout << "  Writebacks to Memory:  " << writebacks[i] << std::endl;
+        std::cout << "Core " << i << " Statistics:" << std::endl;
+        std::cout << "  Total Instructions: " << total_instructions << std::endl;
+        std::cout << "  Total Reads: " << read_instructions[i] << std::endl;
+        std::cout << "  Total Writes: " << write_instructions[i] << std::endl;
+        std::cout << "  Total Execution Cycles: " << total_cycles[i] << std::endl; // Cycle core finished
+        std::cout << "  Idle Cycles: " << stall_cycles[i] << std::endl; // Use tracked stalls
+        std::cout << "  Cache Misses: " << cache_misses[i] << std::endl;
+        std::cout << "  Cache Miss Rate: " << std::fixed << std::setprecision(4) << miss_rate_percent << "%" << std::endl;
+        std::cout << "  Cache Evictions: " << cache_evictions[i] << std::endl;
+        std::cout << "  Writebacks: " << writebacks[i] << std::endl;
+        // Note: Bus Invalidations and Data Traffic are typically system-wide, not per-core.
+        // If you need per-core invalidations *received* or traffic *caused*, that requires more detailed tracking.
+        // The prompt implies per-core sections but lists bus stats. Let's report bus stats only in summary.
         std::cout << std::endl;
     }
 
-    std::cout << "--- Overall ---" << std::endl;
-    std::cout << "  Max Execution Cycles (Across Cores): " << max_cycles << std::endl;
+     // --- Print Overall Bus Summary ---
+    std::cout << "Overall Bus Summary:" << std::endl;
+    std::cout << "  Total Bus Transactions: " << overall_bus_transactions << std::endl;
+    std::cout << "  Total Bus Traffic (Bytes): " << total_bus_traffic_bytes << std::endl;
+    std::cout << "  Total Bus Invalidations Sent: " << total_invalidations << std::endl; // Renamed stat
     std::cout << std::endl;
 
-    std::cout << "--- Bus Stats ---" << std::endl;
-    std::cout << "  Total Invalidations Sent: " << total_invalidations << std::endl;
-    std::cout << "  Total Data Traffic:       " << total_bus_traffic_bytes << " Bytes" << std::endl;
-
-     // Calculate traffic related to writebacks specifically
-    uint64_t total_wbs = std::accumulate(writebacks.begin(), writebacks.end(), 0ULL);
-    uint64_t wb_traffic = total_wbs * block_size;
-    uint64_t fetch_traffic = total_bus_traffic_bytes - wb_traffic; // Approximation, includes C2C traffic
-
-    std::cout << "    Writeback Traffic:      " << wb_traffic << " Bytes" << std::endl;
-    std::cout << "    Fetch/C2C Traffic:      " << fetch_traffic << " Bytes" << std::endl;
-
-
+    // Add the final overall max cycle time if desired, though it's also per core
+    std::cout << "Maximum Execution Time (Across Cores): " << max_cycles << " cycles" << std::endl;
     std::cout << "========================================" << std::endl;
-
-    // You might want to output this to a file as well for the report plotting
 }

@@ -22,6 +22,8 @@ private:
     BusRequest current_transaction;
     int current_winner = -1; // Core ID whose transaction is currently on the bus
 
+    // ... other private members ...
+    uint64_t total_bus_transactions = 0; // *** ADDED ***
 
     // Pointers to all caches for snooping and responses
     std::vector<Cache*> caches; // Use pointers to avoid slicing, manage lifetime carefully
@@ -50,6 +52,8 @@ public:
     void tick(cycle_t current_cycle);
 
     bool isBusy() const { return busy; }
+    // ... constructor, other methods ...
+    uint64_t getTotalTransactions() const { return total_bus_transactions; } // *** ADDED Getter ***
 
 };
 
