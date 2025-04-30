@@ -1,0 +1,5 @@
+R 0x1018 ; Read A (I->S?)
+R 0x1038 ; Read B (I->E/S?)
+W 0x101C ; Write A (S->M?)
+W 0x103C ; Write B (S->M?)
+R 0x1000 ; Read A (S->S?)
