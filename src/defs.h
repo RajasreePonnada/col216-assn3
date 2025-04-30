@@ -39,13 +39,13 @@ const cycle_t MEM_ACCESS_CYCLES = 100; // Additional cycles for memory fetch/wri
 // const cycle_t BUS_UPDATE_CYCLES = 2; // Word transfer (BusUpdate) - Not directly used, C2C block transfer used
 const cycle_t C2C_BLOCK_TRANSFER_CYCLE_FACTOR = 2; // Per word (N = block_size / 4)
 
-// Structure to represent a memory access request
+// Struct to represent a memory access request
 struct MemAccess {
     Operation type;
     addr_t address;
 };
 
-// Structure for bus requests
+// Struct for bus requests
 struct BusRequest {
     int requestingCoreId = -1;
     BusTransaction type = BusTransaction::NoTransaction;
@@ -53,7 +53,7 @@ struct BusRequest {
     cycle_t request_cycle = 0; // Cycle when request was added to queue
 };
 
-// Structure for snooping results
+// Struct for snooping results
 struct SnoopResult {
     bool data_supplied = false; // Did a cache supply data (was M or E)?
     bool was_dirty = false;     // If data supplied, was the state M? (for potential implicit WB)
@@ -62,4 +62,4 @@ struct SnoopResult {
 };
 
 
-#endif // DEFINITIONS_H
+#endif

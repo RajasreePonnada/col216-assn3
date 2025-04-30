@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include <memory> // For owning pointers
+#include <memory> 
 #include "defs.h"
 #include "core.h"
 #include "cache.h"
@@ -16,9 +16,8 @@ private:
     unsigned int s, E, b; // Cache parameters
     unsigned int block_size;
     std::string trace_base_name;
-    std::string output_file; // Optional
+    std::string output_file;
 
-    // Components - Order matters for destruction (cores before caches/bus if needed)
     Stats statistics;
     std::unique_ptr<Bus> bus;
     std::vector<std::unique_ptr<Cache>> caches;
@@ -40,4 +39,4 @@ public:
     cycle_t getMaxCycles() const;
 };
 
-#endif // SIMULATOR_H
+#endif 

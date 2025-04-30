@@ -2,8 +2,8 @@
 #define CACHE_H
 
 #include <vector>
-#include <cmath> // For log2
-#include <map>   // For tracking MSHRs or pending requests
+#include <cmath> 
+#include <map>  
 
 #include "defs.h"
 #include "cache_set.h"
@@ -31,20 +31,19 @@ private:
     addr_t getBlockAddress(addr_t address) const;
     addr_t reconstructAddress(addr_t tag, unsigned int index) const;
 
-    // --- State for handling pending misses (simple version) ---
+    // For handling pending misses
     // Using a map to potentially handle multiple outstanding misses later (MSHR idea)
     // Key: Block Address, Value: Details of the pending request
     struct PendingRequest {
         Operation original_op;
-        int target_way = -1;        // Which way is allocated for the incoming data
-        bool writeback_pending = false; // Is a WB for the victim also pending?
-        addr_t victim_addr = 0;      // Address of the block being written back
-        cycle_t request_init_cycle = 0; // When the miss handling started
+        int target_way = -1;        
+        bool writeback_pending = false; 
+        addr_t victim_addr = 0;     
+        cycle_t request_init_cycle = 0; 
     };
     std::map<addr_t, PendingRequest> pending_requests; // Tracks block addresses waiting for bus data
 
-    // --- Cache internal state ---
-    bool stalled = false; // Is the CORE stalled due to this cache?
+    bool stalled = false; 
 
 
     // Private cache logic functions
@@ -76,4 +75,4 @@ public:
 
 };
 
-#endif // CACHE_H
+#endif 

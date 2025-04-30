@@ -1,8 +1,8 @@
 #include "bus.h"
 #include "cache.h"
 #include "stats.h"
-#include <stdexcept> 
-#include <iostream>  
+#include <stdexcept>
+#include <iostream>
 
 Bus::Bus(unsigned int block_size, Stats *statistics) : requests_per_core(NUM_CORES),
                                                        core_priority_order(NUM_CORES),
@@ -85,16 +85,12 @@ bool Bus::arbitrate(cycle_t current_cycle)
 
         if (!requests_per_core[core_to_check].empty())
         {
-            // Found a winner
             current_winner = core_to_check;
-            current_transaction = requests_per_core[core_to_check].front(); // Get the request
-            requests_per_core[core_to_check].pop();                         // Remove from queue
+            current_transaction = requests_per_core[core_to_check].front();
+            requests_per_core[core_to_check].pop();
 
-            // Update arbitration pointer for next time AFTER finding a winner
             arbitration_pointer = (current_arbitration_index + 1) % NUM_CORES;
 
-            // Set the request cycle on the transaction if not already set
-            // (Should be set when added ideally, but can default here)
             if (current_transaction.request_cycle == 0)
             {
                 current_transaction.request_cycle = current_cycle;
@@ -103,12 +99,10 @@ bool Bus::arbitrate(cycle_t current_cycle)
             return true; // Winner found
         }
 
-        // Move to next core in priority order
         current_arbitration_index = (current_arbitration_index + 1) % NUM_CORES;
         checked_cores++;
     }
 
-    // No requests pending from any core
     current_winner = -1;
     return false;
 }
@@ -117,7 +111,7 @@ SnoopResult Bus::processSnooping(const BusRequest &request, int requestingCoreId
 {
     SnoopResult combined_result;
     int sharer_count = 0;
-    int invalidation_count = 0; // Track how many caches invalidated
+    int invalidation_count = 0;
 
     // Snoop all *other* caches
     for (int i = 0; i < caches.size(); ++i)
@@ -129,61 +123,36 @@ SnoopResult Bus::processSnooping(const BusRequest &request, int requestingCoreId
 
         if (result.data_supplied)
         {
-            // Only one cache should supply data (the one in M or E state)
             if (!combined_result.data_supplied)
             {
-                combined_result = result; // Take the result from the supplier
+                combined_result = result;
             }
-            // else
-            // {
-            //     // Should not happen in MESI if implemented correctly
-            //     std::cerr << "Error: Multiple caches attempting to supply data for addr "
-            //               << std::hex << request.address << std::dec << "!" << std::endl;
-            // }
         }
-        // Check if block is shared *after* potential state changes from snoop
         if (caches[i]->isBlockShared(request.address))
-        { // Need this helper in Cache
+        {
             sharer_count++;
-            combined_result.sharers.push_back(i); // Record who is sharing
+            combined_result.sharers.push_back(i);
         }
-
-        // Track if the snoop caused an invalidation (e.g., S->I on BusRdX/BusUpgr)
-        // The cache snoop method should know if it invalidated. Let's assume it does.
-        // Modification: Cache::snoopRequest should return if it invalidated.
-        // For now, infer based on transaction type and cache state (done within cache snoop)
-        // Need a way to count invalidations globally.
-        // Let Cache::snoopRequest call stats->recordInvalidation().
     }
 
-    // Determine if the block is shared overall *after* snooping completes
-    // The requesting core will also share it if it's a read.
     if (request.type == BusTransaction::BusRd || request.type == BusTransaction::BusRdX || request.type == BusTransaction::BusUpgr)
     {
-        // Check requester's final state (will be S or M/E)
-        // If any other core remains shared, the final state is shared.
         if (sharer_count > 0)
         {
             combined_result.is_shared = true;
         }
-        // If requester is reading (BusRd), it adds to potential sharers
-        // If requester is writing (BusRdX/BusUpgr), others should be Invalid.
         if (request.type == BusTransaction::BusRd && sharer_count == 0 && !combined_result.data_supplied)
         {
-            // If no one else has it (shared or M/E), the requester gets it exclusively (E state)
             combined_result.is_shared = false;
         }
         else
         {
-            combined_result.is_shared = true; // Default to shared if anyone else has it or supplied it
+            combined_result.is_shared = true;
         }
 
         if (request.type == BusTransaction::BusRdX || request.type == BusTransaction::BusUpgr)
         {
-            // These transactions *should* result in others being invalid.
-            // The check above is more for BusRd completion state.
-            combined_result.is_shared = false; // Requester should have exclusive/modified ownership.
-            // Invalidation counts are handled within Cache::snoopRequest calls to stats->recordInvalidation()
+            combined_result.is_shared = false;
         }
     }
 
@@ -228,24 +197,19 @@ void Bus::startTransaction(const BusRequest &request, const SnoopResult &snoop_r
         break;
 
     case BusTransaction::BusUpgr:
-        // This is an invalidation signal. Assume minimal bus time.
-        latency = 1; // Takes 1 cycle for the signal to propagate/be acknowledged implicitly
-        traffic = 0; // No data block transferred
-        // Invalidation count handled by snooping caches calling stats->recordInvalidation()
+        latency = 1;
+        traffic = 0;
         break;
-    case BusTransaction::NoTransaction: // Should not happen here
+    case BusTransaction::NoTransaction:
         busy = false;
-        return; // No transaction to start
+        return;
     }
 
-    // Calculate end cycle based on when bus becomes free (which is now)
     transaction_end_cycle = current_cycle + latency;
 
     // Record data traffic if any
     if (is_data_transfer && traffic > 0)
     {
-        stats->addBusTraffic(traffic, request.requestingCoreId); // Record traffic caused by this core
+        stats->addBusTraffic(traffic, request.requestingCoreId);
     }
-
-    // Store the current transaction details (already done by arbitrate)
 }

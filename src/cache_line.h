@@ -8,8 +8,6 @@ struct CacheLine {
     addr_t tag = 0;
     cycle_t lastUsedCycle = 0; // For LRU tracking
 
-    // No actual data stored, just tag and state
-
     CacheLine() = default; // Default constructor
 
     bool isValid() const {
@@ -17,4 +15,4 @@ struct CacheLine {
     }
 };
 
-#endif // CACHE_LINE_H
+#endif 
