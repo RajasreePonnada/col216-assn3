@@ -1,8 +1,8 @@
 #include "bus.h"
-#include "cache.h" // Include full Cache definition here
+#include "cache.h"
 #include "stats.h"
-#include <stdexcept> // For exceptions
-#include <iostream>  // For debug
+#include <stdexcept> 
+#include <iostream>  
 
 Bus::Bus(unsigned int block_size, Stats *statistics) : requests_per_core(NUM_CORES),
                                                        core_priority_order(NUM_CORES),
@@ -134,12 +134,12 @@ SnoopResult Bus::processSnooping(const BusRequest &request, int requestingCoreId
             {
                 combined_result = result; // Take the result from the supplier
             }
-            else
-            {
-                // Should not happen in MESI if implemented correctly
-                std::cerr << "Error: Multiple caches attempting to supply data for addr "
-                          << std::hex << request.address << std::dec << "!" << std::endl;
-            }
+            // else
+            // {
+            //     // Should not happen in MESI if implemented correctly
+            //     std::cerr << "Error: Multiple caches attempting to supply data for addr "
+            //               << std::hex << request.address << std::dec << "!" << std::endl;
+            // }
         }
         // Check if block is shared *after* potential state changes from snoop
         if (caches[i]->isBlockShared(request.address))
