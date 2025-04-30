@@ -1,0 +1,5 @@
+R 0x1008 ; Read A (I->S, snoops C0 E->S)
+W 0x100C ; Write A (S->M, invalidates C0)
+R 0x1028 ; Read B (I->E/S depending on C0)
+W 0x102C ; Write B (E/S->M, invalidates C0?)
+R 0x1000 ; Read A (I->S, snoops C1 M->S, WB triggered)

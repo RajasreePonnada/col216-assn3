@@ -1,0 +1,5 @@
+W 0x1030 ; Write X.3
+W 0x2030 ; Write Y.3
+W 0x1034 ; Write X.3
+W 0x2034 ; Write Y.3
+W 0x1038 ; Write X.3

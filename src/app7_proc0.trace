@@ -1,0 +1,5 @@
+R 0x1000 ; Read A (I->E)
+W 0x1004 ; Write A (E->M)
+R 0x1020 ; Read B (I->E)
+W 0x1008 ; Write A (M->M)
+R 0x1024 ; Read B (E->S potential, if C1 read B)

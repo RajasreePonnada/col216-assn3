@@ -107,7 +107,7 @@ void Stats::printFinalStats(
     std::cout << "  Block Bits: " << b << std::endl;
     std::cout << "  Block Size (Bytes): " << block_size_bytes << std::endl;
     std::cout << "  Number of Sets: " << num_sets << std::endl;
-    // std::cout << "  Cache Size (KB per core): " << std::fixed << std::setprecision(2) << cache_size_kb << std::endl;
+    std::cout << "  Cache Size (KB per core): " << std::fixed << std::setprecision(0) << cache_size_kb << std::endl;
     std::cout << "  MESI Protocol: Enabled" << std::endl;
     std::cout << "  Write Policy: Write-back, Write-allocate" << std::endl;
     std::cout << "  Replacement Policy: LRU" << std::endl;
@@ -129,7 +129,7 @@ void Stats::printFinalStats(
         std::cout << "  Total Execution Cycles: " << total_cycles[i] << std::endl;
         std::cout << "  Idle Cycles: " << stall_cycles[i] << std::endl;
         std::cout << "  Cache Misses: " << cache_misses[i] << std::endl;
-        std::cout << "  Cache Miss Rate: " << std::fixed << std::setprecision(4) << miss_rate_percent << "%" << std::endl;
+        std::cout << "  Cache Miss Rate: " << std::fixed << std::setprecision(2) << miss_rate_percent << "%" << std::endl;
         std::cout << "  Cache Evictions: " << cache_evictions[i] << std::endl;
         std::cout << "  Writebacks: " << writebacks[i] << std::endl; // Writebacks *initiated* by core i
         // *** ADDED Per-Core Bus Stats ***

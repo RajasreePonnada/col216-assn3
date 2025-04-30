@@ -1,0 +1,5 @@
+W 0x1020 ; Write B (I->M)
+W 0x1060 ; Write D (I->M, conflicts B)
+W 0x2020 ; Write F (I->M, conflicts B,D -> evicts LRU(B or D), may cause WB)
+R 0x1024 ; Read B (Likely miss, may evict, may cause WB)
+W 0x1068 ; Write D (Likely miss, may evict, may cause WB)
