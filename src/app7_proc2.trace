@@ -1,5 +1,0 @@
-R 0x1010 ; Read A (I->S, snoops C1 S->S?)
-W 0x1030 ; Write B (I->M initially or S->M?)
-R 0x1014 ; Read A (S->S?)
-W 0x1034 ; Write B (M->M?)
-R 0x1000 ; Read A (S->S?)

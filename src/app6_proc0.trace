@@ -1,5 +1,0 @@
-W 0x1000 ; Write A (I->M)
-W 0x1040 ; Write C (I->M, conflicts A)
-W 0x2000 ; Write E (I->M, conflicts A,C -> evicts LRU(A or C), may cause WB)
-R 0x1004 ; Read A (Likely miss, may evict other block, may cause WB)
-W 0x1048 ; Write C (Likely miss, may evict other block, may cause WB)

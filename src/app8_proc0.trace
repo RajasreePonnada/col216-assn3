@@ -1,5 +1,0 @@
-W 0x1000 ; Write X.0
-W 0x2000 ; Write Y.0
-W 0x1004 ; Write X.0
-W 0x2004 ; Write Y.0
-W 0x1008 ; Write X.0

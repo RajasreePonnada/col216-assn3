@@ -1,5 +1,0 @@
-R 0x1028 ; Read B (Compulsory miss -> E/S)
-R 0x1068 ; Read D (Compulsory miss -> E/S, Conflict B)
-R 0x2028 ; Read F (Compulsory miss -> E/S, Conflict B,D -> Evicts LRU)
-R 0x102C ; Read B (Likely miss again)
-R 0x106C ; Read D (Likely miss again)
