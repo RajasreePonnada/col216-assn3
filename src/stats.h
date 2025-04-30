@@ -36,14 +36,14 @@ public:
     Stats();
 
     // Method signatures need update
-    // void recordInvalidationReceived(int coreId, int count = 1); // Renamed and takes coreId
-    // void addBusTraffic(uint64_t bytes, int causingCoreId);      // Takes causingCoreId
+    void recordInvalidationReceived(int coreId, int count = 1); // Renamed and takes coreId
+    void addBusTraffic(uint64_t bytes, int causingCoreId);      // Takes causingCoreId
 
     void recordAccess(int coreId, Operation op);
     void recordMiss(int coreId);
     void recordEviction(int coreId);
     void recordWriteback(int coreId);       // Called when WB is initiated
-    void recordInvalidation(int count = 1); // Allow recording multiple invalidations (e.g., BusUpgr)
+    // void recordInvalidation(int count = 1); // Allow recording multiple invalidations (e.g., BusUpgr)
     void addBusTraffic(uint64_t bytes);
     void setCoreCycles(int coreId, cycle_t cycles);
     void incrementStallCycles(int coreId, cycle_t cycles = 1);

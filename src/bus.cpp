@@ -244,7 +244,7 @@ void Bus::startTransaction(const BusRequest &request, const SnoopResult &snoop_r
     // Record data traffic if any
     if (is_data_transfer && traffic > 0)
     {
-        stats->addBusTraffic(traffic);
+        stats->addBusTraffic(traffic, request.requestingCoreId); // Record traffic caused by this core
     }
 
     // Store the current transaction details (already done by arbitrate)
